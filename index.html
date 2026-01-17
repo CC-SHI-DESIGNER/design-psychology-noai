@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>情緒視覺實驗室 - 實驗組</title>
+    <title>情緒視覺實驗室 - 對照組</title>
     <style>
-        :root { --primary: #6c5ce7; --bg: #f8f9fa; --danger: #eb4d4b; --warning: #f9ca24; }
+        :root { --primary: #747d8c; --bg: #f8f9fa; --danger: #eb4d4b; --warning: #f9ca24; }
         * { box-sizing: border-box; touch-action: manipulation; }
         body { font-family: -apple-system, "Noto Sans TC", sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; min-height: 100vh; }
         .card { background: white; width: 100%; max-width: 600px; margin: 10px; padding: 25px; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); }
         .setup-ui { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
         input, select, textarea { font-size: 16px !important; padding: 12px; border: 2px solid #eee; border-radius: 12px; outline: none; }
-        .mood-tag { font-size: 32px; font-weight: bold; color: var(--primary); text-align: center; }
-        .timer-info { text-align: center; color: var(--danger); font-size: 14px; font-weight: bold; margin: 5px 0 10px 0; }
+        .mood-tag { font-size: 32px; font-weight: bold; color: #2f3542; text-align: center; }
+        .timer-info { text-align: center; color: #747d8c; font-size: 14px; font-weight: bold; margin: 5px 0 10px 0; }
         .controls-group { background: #fafafa; padding: 15px; border-radius: 20px; border: 1px solid #eee; margin-bottom: 15px; }
         .control-label { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 8px; display: block; }
         .control-item { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
@@ -25,17 +25,14 @@
         .btn-undo { background: var(--warning); color: #574b10; }
         .btn-clear { background: var(--danger); color: white; }
         .desc-area { width: 100%; margin-top: 15px; border: 2px solid #eee; min-height: 80px; resize: none; padding: 10px; }
-        .btn-next { width: 100%; padding: 20px; background: var(--primary); color: white; border: none; border-radius: 22px; cursor: pointer; font-weight: bold; font-size: 20px; margin-top: 15px; }
-        #fb-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:99; backdrop-filter: blur(5px); }
-        #fb-box { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 450px; background: white; padding: 35px; border-radius: 30px; text-align: center; z-index: 100; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .btn-next { width: 100%; padding: 20px; background: #2f3542; color: white; border: none; border-radius: 22px; cursor: pointer; font-weight: bold; font-size: 20px; margin-top: 15px; }
+        #loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:100; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
     </style>
 </head>
 <body>
-    <div id="fb-overlay"></div>
-    <div id="fb-box">
-        <h2 style="color:var(--primary);">🌟 AI 鼓勵師</h2>
-        <p id="fb-text" style="font-size: 18px; line-height:1.6; color:#444; margin: 20px 0;"></p>
-        <button onclick="closeFB()" class="btn-next">收到，下一關！🚀</button>
+    <div id="loading-overlay">
+        <div style="font-size: 24px; font-weight: bold; color: #2f3542;">數據同步中...🚀</div>
+        <p style="color: #666;">請稍候，正在為您保存實驗結果</p>
     </div>
 
     <div class="card">
@@ -43,14 +40,14 @@
             <input type="text" id="sid" placeholder="學號" style="flex:2;">
             <input type="number" id="age" placeholder="年齡" style="flex:1;">
             <select id="gender"><option value="女">女</option><option value="男">男</option></select>
-            <input type="hidden" id="exp-group" value="AI_TEST">
+            <input type="hidden" id="exp-group" value="CONTROL_GROUP">
         </div>
 
         <div class="mood-tag" id="mood-label">心情：喜</div>
         <div class="timer-info" id="timer-display">實際繪製：0.0s</div>
 
         <div class="controls-group">
-            <label class="control-label">1. 色彩選擇 (HEX 標準色票)</label>
+            <label class="control-label">1. 色彩選擇 (HEX)</label>
             <div class="control-item">
                 <input type="range" id="colorSlider" min="0" max="359" value="0" oninput="updateBrush()">
                 <span id="hex-display" style="font-family:monospace; font-weight:bold; width:70px;">#FF0000</span>
@@ -71,19 +68,16 @@
             <canvas id="canvas"></canvas>
         </div>
 
-        <textarea id="mood-desc" class="desc-area" placeholder="請描述你為什麼選擇這些顏色和形狀..."></textarea>
-        <button class="btn-next" id="action-btn" onclick="checkAndNext()">保存並繼續 (1/4) ✨</button>
+        <textarea id="mood-desc" class="desc-area" placeholder="請描述您為什麼選擇這些顏色和形狀..."></textarea>
+        <button class="btn-next" id="action-btn" onclick="saveAndNext()">保存並繼續 (1/4)</button>
     </div>
 
     <script>
+        // 確保連結您的 Google Apps Script URL
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxco7a9N8h1USfXfhmnZD_ktPPCbNNRuN5V-F2mF-iUGu7w0hG0_KIKBZ3JdCLbUOEaXQ/exec"; 
         const moods = ["喜", "怒", "哀", "樂"];
         let step = 0, finalData = [], curHex = "#FF0000", curSize = 8, history = [], hasDrawn = false, drawing = false;
-        let activeTime = 0, lastTs = 0, colorSeq = [];
-        
-        // --- 軌跡紀錄核心變數 ---
-        let strokeHistory = []; 
-        let currentStroke = null;
+        let activeTime = 0, lastTs = 0, colorSeq = [], strokeHistory = [], currentStroke = null;
 
         const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d'), brushInd = document.getElementById('brushInd');
 
@@ -117,11 +111,9 @@
         
         function undo() { 
             if(history.length>1) { 
-                history.pop(); 
-                let img=new Image(); 
-                img.src=history[history.length-1]; 
+                history.pop(); strokeHistory.pop();
+                let img=new Image(); img.src=history[history.length-1]; 
                 img.onload=()=>ctx.drawImage(img,0,0);
-                strokeHistory.pop(); // 同步復原軌跡數據
             } 
         }
 
@@ -133,115 +125,76 @@
         function start(e) { 
             drawing=true; hasDrawn=true; lastTs = Date.now(); 
             const {x,y}=getPos(e); 
-            
-            // --- 開始紀錄筆劃 ---
-            currentStroke = {
-                size: curSize,
-                color: curHex,
-                points: [{x: Math.round(x), y: Math.round(y), t: 0}]
-            };
-
+            currentStroke = { size: curSize, color: curHex, points: [{x: Math.round(x), y: Math.round(y), t: 0}] };
             if (colorSeq[colorSeq.length-1] !== curHex) colorSeq.push(curHex);
             ctx.beginPath(); ctx.moveTo(x,y); 
         }
 
         function move(e) { 
             if(!drawing) return; 
-            const now = Date.now(); 
-            activeTime += (now - lastTs) / 1000; 
-            lastTs = now;
+            const now = Date.now(); activeTime += (now - lastTs) / 1000; lastTs = now;
             updateTimerUI();
             const {x,y}=getPos(e); 
-            
-            // --- 紀錄移動座標與相對時間 ---
-            if(currentStroke) {
-                currentStroke.points.push({
-                    x: Math.round(x), 
-                    y: Math.round(y), 
-                    t: parseFloat(activeTime.toFixed(3))
-                });
-            }
-
-            ctx.lineTo(x,y); 
-            ctx.strokeStyle=curHex; ctx.lineWidth=curSize; ctx.lineCap='round'; ctx.stroke(); 
+            if(currentStroke) currentStroke.points.push({ x: Math.round(x), y: Math.round(y), t: parseFloat(activeTime.toFixed(3)) });
+            ctx.lineTo(x,y); ctx.strokeStyle=curHex; ctx.lineWidth=curSize; ctx.lineCap='round'; ctx.stroke(); 
         }
 
         function updateTimerUI() { document.getElementById('timer-display').innerText = `實際繪製：${activeTime.toFixed(1)}s`; }
 
+        const endDrawing = () => { if(drawing) { strokeHistory.push(currentStroke); save(); } drawing=false; };
+        window.addEventListener('mouseup', endDrawing);
+        window.addEventListener('touchend', endDrawing);
         canvas.addEventListener('mousedown', start);
         canvas.addEventListener('touchstart', (e)=>{start(e); e.preventDefault();}, {passive:false});
         canvas.addEventListener('mousemove', move);
         canvas.addEventListener('touchmove', (e)=>{move(e); e.preventDefault();}, {passive:false});
-        
-        // 結束畫畫的統一部分
-        const endDrawing = () => {
-            if(drawing) {
-                strokeHistory.push(currentStroke); // 將整筆劃存入歷史
-                save();
-            }
-            drawing=false;
-        };
-        window.addEventListener('mouseup', endDrawing);
-        window.addEventListener('touchend', endDrawing);
 
-        function checkAndNext() {
+        // 核心修改：移除彈窗邏輯，直接進入下一關
+        function saveAndNext() {
             const sid = document.getElementById('sid').value, desc = document.getElementById('mood-desc').value.trim();
-            if(!sid || !hasDrawn || desc.length < 2) return alert("請完整填寫學號、繪圖並輸入想法描述！");
+            if(!sid || !hasDrawn || desc.length < 2) return alert("請完整填寫學號、進行繪圖並輸入想法描述！");
 
-            // --- 修正：在這裡把 stroke_detail 加進去 ---
+            // 紀錄當前數據
             finalData.push({
-                id: sid, 
-                age: document.getElementById('age').value, 
+                id: sid, age: document.getElementById('age').value, 
                 gender: document.getElementById('gender').value,
-                group: "AI_TEST",
-                mood: moods[step], 
-                color_seq: colorSeq.join(", "),
-                active_time: activeTime.toFixed(1),
-                desc: desc, 
-                stroke_detail: JSON.stringify(strokeHistory), // <-- 這是關鍵！
+                group: "CONTROL_GROUP", mood: moods[step], 
+                color_seq: colorSeq.join(", "), active_time: activeTime.toFixed(1),
+                desc: desc, stroke_detail: JSON.stringify(strokeHistory), 
                 image: canvas.toDataURL('image/jpeg', 0.4)
             });
 
-            const feedback = { 
-                "喜":"這繽紛的色彩好有生命力，感覺心情都跟著亮了起來！☀️", 
-                "怒":"筆觸好有爆發力，這股能量的釋放非常精彩！🔥", 
-                "哀":"靜謐的色調中蘊含著深刻的情感，辛苦你了。🕯️", 
-                "樂":"畫作充滿了節奏感，色彩的搭配讓人感到無比喜悅！🌈" 
-            };
-            document.getElementById('fb-text').innerText = feedback[moods[step]];
-            document.getElementById('fb-overlay').style.display = "block";
-            document.getElementById('fb-box').style.display = "block";
-        }
-
-        function closeFB() {
-            document.getElementById('fb-overlay').style.display = "none";
-            document.getElementById('fb-box').style.display = "none";
-            goNext();
-        }
-
-        function goNext() {
             if(step < 3) {
-                step++; activeTime = 0; colorSeq = []; strokeHistory = []; // 每關重置軌跡
+                // 進入下一關
+                step++; 
+                activeTime = 0; colorSeq = []; strokeHistory = []; 
                 document.getElementById('mood-label').innerText = "心情：" + moods[step];
                 document.getElementById('setup-group').style.visibility = "hidden";
                 document.getElementById('mood-desc').value = "";
-                document.getElementById('action-btn').innerText = `保存並繼續 (${step+1}/4) ✨`;
+                document.getElementById('action-btn').innerText = `保存並繼續 (${step+1}/4)`;
                 clearCanvas();
             } else {
-                submit();
+                // 最後一關完成，執行最終上傳
+                finalSubmit();
             }
         }
 
-        async function submit() {
+        async function finalSubmit() {
+            document.getElementById('loading-overlay').style.display = "flex";
             const btn = document.getElementById('action-btn');
-            btn.disabled = true; btn.innerText = "數據同步中... 🚀";
+            btn.disabled = true;
+            
             try {
                 for(let data of finalData) {
                     await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
                 }
-                alert("🎉 所有實驗數據與軌跡已成功同步！感謝參與。");
+                alert("🎉 實驗已順利完成，感謝您的參與。");
                 location.reload();
-            } catch(e) { alert("傳送失敗！請檢查網址設定。"); btn.disabled = false; }
+            } catch(e) { 
+                alert("上傳過程中出現錯誤，請檢查網路連線。"); 
+                document.getElementById('loading-overlay').style.display = "none";
+                btn.disabled = false;
+            }
         }
         updateBrush();
     </script>
