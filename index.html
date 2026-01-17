@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>情緒視覺實驗室 - 尺度標尺版</title>
+    <title>情緒視覺實驗室 - 視覺引導版</title>
     <style>
         :root { --primary: #1e3799; --bg: #f5f6fa; --danger: #eb4d4b; --success: #20bf6b; --gray: #dcdde1; }
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -24,13 +24,11 @@
         .label-text { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 8px; display: block; }
         .control-item { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
         
-        /* 色彩滑桿 */
         #colorSlider { flex: 1; height: 18px; border-radius: 10px; -webkit-appearance: none; background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
         #colorSlider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: white; border: 3px solid var(--primary); border-radius: 50%; }
 
-        /* 核心修正：Likert 標尺樣式 */
         .likert-scale { display: flex; justify-content: space-between; gap: 8px; margin: 10px 0; }
-        .likert-item { flex: 1; position: relative; }
+        .likert-item { flex: 1; }
         .likert-item input { display: none; }
         .likert-label { 
             display: flex; justify-content: center; align-items: center; 
@@ -43,6 +41,13 @@
             box-shadow: 0 4px 10px rgba(30,55,153,0.3);
         }
         .scale-hints { display: flex; justify-content: space-between; font-size: 11px; color: #95a5a6; margin-top: 4px; }
+
+        /* 新增：引導提示樣式 */
+        .visual-hint { 
+            background: #fff9db; color: #f39c12; padding: 10px; 
+            text-align: center; font-size: 13px; font-weight: bold;
+            border-bottom: 1px dashed #ffeaa7;
+        }
 
         .canvas-container { border: 2px solid #eee; border-radius: 18px; overflow: hidden; background: white; }
         canvas { display: block; width: 100%; aspect-ratio: 4 / 3; touch-action: none; background: white; }
@@ -74,15 +79,12 @@
                 <input type="range" id="colorSlider" min="0" max="359" value="0" oninput="updateBrush()">
                 <div id="cPreview" style="width:34px; height:34px; border-radius:8px; background:#f00; border:2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
             </div>
-            
             <span class="label-text">🖌️ 筆觸大小：</span>
             <div class="control-item">
                 <input type="range" id="sizeSlider" min="2" max="60" value="10" oninput="updateBrush()" style="flex:1;">
                 <span id="sVal" style="font-weight:bold; font-size:14px; width:20px;">10</span>
             </div>
-
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-            
             <span class="label-text">⚡ 喚起度 (Arousal) - 此情緒的強度標尺：</span>
             <div class="likert-scale">
                 <div class="likert-item"><input type="radio" name="arousal" id="a1" value="1"><label for="a1" class="likert-label">1</label></div>
@@ -100,6 +102,7 @@
                 <span id="step-cnt" style="font-size:12px; color:#95a5a6; font-weight:bold;">1 / 12</span>
                 <button class="tool-btn" style="background:#e74c3c; color:white;" onclick="clearCanvas()">🗑️ 重畫</button>
             </div>
+            <div id="visual-hint" class="visual-hint">💡 提示：試著用流暢、向上的曲線或明亮色塊來表達</div>
             <canvas id="canvas"></canvas>
         </div>
 
@@ -110,10 +113,20 @@
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxco7a9N8h1USfXfhmnZD_ktPPCbNNRuN5V-F2mF-iUGu7w0hG0_KIKBZ3JdCLbUOEaXQ/exec";
         
-        const moods = [
-            "喜悅 (Joy)", "憤怒 (Anger)", "悲傷 (Sadness)", "恐懼 (Fear)", 
-            "興奮 (Excited)", "放鬆 (Relaxed)", "焦慮 (Anxious)", "憂鬱 (Depressed)",
-            "敬畏 (Awe)", "懷舊 (Nostalgia)", "迷惘 (Confusion)", "滿足 (Contentment)"
+        // 擴展情緒對象，加入引導語
+        const moodConfigs = [
+            { name: "喜悅 (Joy)", hint: "💡 提示：想像流暢、向上躍動的曲線或擴散的色塊" },
+            { name: "憤怒 (Anger)", hint: "💡 提示：想像尖銳、粗重、放射狀或破碎的有力線條" },
+            { name: "悲傷 (Sadness)", hint: "💡 提示：想像沉重、緩慢下垂的長線或聚攏的暗影" },
+            { name: "恐懼 (Fear)", hint: "💡 提示：想像細碎、急促抖動、斷裂或收縮的幾何感" },
+            { name: "興奮 (Excited)", hint: "💡 提示：想像高頻率、跳躍、豐富交織的動態軌跡" },
+            { name: "放鬆 (Relaxed)", hint: "💡 提示：想像水平延伸、溫和緩慢、寬闊疏朗的波浪" },
+            { name: "焦慮 (Anxious)", hint: "💡 提示：想像雜亂、纏繞、反覆堆疊且不穩定的細線" },
+            { name: "憂鬱 (Depressed)", hint: "💡 提示：想像模糊、單調、由上至下滲透的沉悶色調" },
+            { name: "敬畏 (Awe)", hint: "💡 提示：想像宏大、對稱、向無限延伸的發散式結構" },
+            { name: "懷舊 (Nostalgia)", hint: "💡 提示：想像柔焦、環狀捲曲、具有層次感的重疊形狀" },
+            { name: "迷惘 (Confusion)", hint: "💡 提示：想像旋轉、無方向性、互不銜接的迷宮式線條" },
+            { name: "滿足 (Contentment)", hint: "💡 提示：想像圓潤、穩定、飽滿且均衡分佈的閉合圓弧" }
         ];
 
         let step = 0, strokeHistory = [], canvasHistory = [];
@@ -206,20 +219,18 @@
             const sid = document.getElementById('sid').value.trim();
             const age = document.getElementById('age').value;
             const desc = document.getElementById('mood-desc').value.trim();
-            
-            // 獲取選中的標尺值
             const arousalNode = document.querySelector('input[name="arousal"]:checked');
             
             if(!sid || !age) return alert("請填寫基本資料！");
             if(!hasDrawn) return alert("請在畫布上進行繪圖！");
-            if(!arousalNode) return alert("請點選『喚起度』標尺（1-5），這對實驗非常重要！");
-            if(desc.length < 2) return alert("請簡短描述您的感受。");
+            if(!arousalNode) return alert("請點選『喚起度』標尺（1-5）！");
+            if(desc.length < 2) return alert("請描述您的感受。");
 
             const colors = [...new Set(strokeHistory.map(s => s.color))].join(", ");
             const currentData = {
                 id: sid, age, gender: document.getElementById('gender').value,
-                mood: moods[step], 
-                arousal: arousalNode.value, // 標尺數據
+                mood: moodConfigs[step].name, 
+                arousal: arousalNode.value,
                 color_seq: colors,
                 active_time: activeTime.toFixed(1), desc: desc,
                 stroke_detail: JSON.stringify(strokeHistory),
@@ -228,16 +239,16 @@
 
             uploadData(currentData);
 
-            if (step < moods.length - 1) {
+            if (step < moodConfigs.length - 1) {
                 step++;
-                document.getElementById('mood-label').innerText = `${step+1}. ${moods[step]}`;
-                document.getElementById('step-cnt').innerText = `${step+1} / ${moods.length}`;
+                // 更新標題與引導語
+                document.getElementById('mood-label').innerText = `${step+1}. ${moodConfigs[step].name}`;
+                document.getElementById('visual-hint').innerText = moodConfigs[step].hint;
+                document.getElementById('step-cnt').innerText = `${step+1} / ${moodConfigs.length}`;
+                
                 document.getElementById('setup-group').style.display = "none"; 
                 document.getElementById('mood-desc').value = "";
-                
-                // 重置標尺
                 document.querySelectorAll('input[name="arousal"]').forEach(r => r.checked = false);
-                
                 clearCanvas();
                 window.scrollTo(0,0);
             } else {
@@ -250,7 +261,7 @@
                 document.getElementById('action-btn').innerText = "上傳中，請稍候...";
                 setTimeout(checkFinish, 500);
             } else {
-                alert("✨ 實驗已圓滿完成！數據同步完畢。");
+                alert("✨ 實驗完成！感謝您的參與。");
                 location.reload();
             }
         }
