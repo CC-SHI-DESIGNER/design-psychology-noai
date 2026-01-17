@@ -110,7 +110,7 @@
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxco7a9N8h1USfXfhmnZD_ktPPCbNNRuN5V-F2mF-iUGu7w0hG0_KIKBZ3JdCLbUOEaXQ/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhddDm1Rn0aeAUxKibv4cYvfKCMwi821Ib4Vw-Hvy_ZgKsqF5LXYo-UjnCIq4dDP3ksA/exec";
         
         const moodConfigs = [
             { name: "喜悅 (Joy)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
@@ -226,13 +226,12 @@
 
             const colors = [...new Set(strokeHistory.map(s => s.color))].join(", ");
             
-            // 核心修改：數據封裝包含 arousal 喚起度
             const currentData = {
                 id: sid, 
                 age: age, 
                 gender: document.getElementById('gender').value,
                 mood: moodConfigs[step].name, 
-                arousal: arousalNode.value, // 此處將喚起度數值傳入
+                arousal: arousalNode.value, // 記錄喚起度
                 color_seq: colors,
                 active_time: activeTime.toFixed(1), 
                 desc: desc,
