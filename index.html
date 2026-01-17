@@ -3,92 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>情緒視覺實驗室 V3 - 加速版</title>
+    <title>情緒視覺實驗室 - 極速版</title>
     <style>
         :root { --primary: #1e3799; --bg: #f5f6fa; --danger: #eb4d4b; --success: #20bf6b; }
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; }
-        .card { background: white; width: 100%; max-width: 500px; margin: 10px; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .card { background: white; width: 100%; max-width: 550px; margin: 15px; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
-        /* 修正：性別欄與佈局 */
-        .setup-ui { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
-        .setup-ui input, .setup-ui select { height: 45px; border: 2px solid #eee; border-radius: 10px; padding: 5px 10px; font-size: 14px !important; }
-        #sid { flex: 2; min-width: 100px; }
-        #age { width: 60px; }
-        #gender { width: 70px; background: #fff; }
+        /* 修正：電腦與手機通用的學號年齡佈局 */
+        .setup-ui { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: nowrap; }
+        #sid { flex: 0 1 250px; min-width: 120px; } /* 學號寬度限制 */
+        #age { flex: 0 1 80px; min-width: 60px; }   /* 年齡寬度固定 */
+        #gender { flex: 0 1 80px; min-width: 70px; } 
 
-        .mood-tag { font-size: 32px; font-weight: bold; color: var(--primary); text-align: center; margin-bottom: 5px; }
-        .timer-info { text-align: center; color: #7f8c8d; font-size: 13px; margin-bottom: 15px; }
+        input, select { height: 48px; border: 2px solid #eee; border-radius: 12px; padding: 0 10px; font-size: 15px !important; outline: none; }
+        input:focus { border-color: var(--primary); }
 
-        .controls-group { background: #f9f9f9; padding: 12px; border-radius: 15px; margin-bottom: 12px; }
-        .control-item { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
-        #colorSlider { flex: 1; height: 15px; border-radius: 10px; -webkit-appearance: none; background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+        .mood-tag { font-size: 34px; font-weight: bold; color: var(--primary); text-align: center; margin-bottom: 5px; }
+        .timer-info { text-align: center; color: #95a5a6; font-size: 13px; margin-bottom: 15px; }
+
+        .controls-group { background: #f9f9f9; padding: 15px; border-radius: 18px; margin-bottom: 15px; }
+        .label-text { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 5px; display: block; }
+        .control-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        
+        #colorSlider { flex: 1; height: 18px; border-radius: 10px; -webkit-appearance: none; background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
         #colorSlider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: white; border: 3px solid var(--primary); border-radius: 50%; }
-        
-        /* 畫布區 */
-        .canvas-container { border: 2px solid #eee; border-radius: 15px; overflow: hidden; background: white; }
-        canvas { display: block; width: 100%; aspect-ratio: 4 / 3; touch-action: none; background: white; }
-        .toolbar { display: flex; padding: 8px; background: #fafafa; border-bottom: 1px solid #eee; justify-content: space-between; align-items: center; }
-        .tool-btn { border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
-        
-        .desc-area { width: 100%; margin-top: 12px; height: 80px; border: 2px solid #eee; border-radius: 12px; padding: 10px; font-size: 15px; resize: none; }
-        .btn-next { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 18px; margin-top: 15px; cursor: pointer; }
 
-        /* 上傳遮罩 */
-        #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; }
-        .loader { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .canvas-container { border: 2px solid #eee; border-radius: 18px; overflow: hidden; background: white; }
+        canvas { display: block; width: 100%; aspect-ratio: 4 / 3; touch-action: none; background: white; }
+        .toolbar { display: flex; padding: 10px; background: #fafafa; border-bottom: 1px solid #eee; justify-content: space-between; align-items: center; }
+        .tool-btn { border: none; padding: 8px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; }
+
+        .desc-area { width: 100%; margin-top: 15px; height: 90px; border: 2px solid #eee; border-radius: 15px; padding: 12px; font-size: 16px; resize: none; }
+        .btn-next { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 18px; font-weight: bold; font-size: 19px; margin-top: 15px; cursor: pointer; }
+
+        /* 背景上傳提示 */
+        #sync-toast { position: fixed; top: 20px; right: 20px; background: #2f3542; color: white; padding: 10px 20px; border-radius: 10px; display: none; font-size: 12px; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
-    <div id="loading-overlay">
-        <div class="loader"></div>
-        <p id="loading-status" style="margin-top: 15px; font-weight: bold; color: var(--primary);">數據同步中 (0/4)...</p>
-        <div style="width: 200px; height: 6px; background: #eee; border-radius: 3px; overflow: hidden;">
-            <div id="progress-bar" style="width: 0%; height: 100%; background: var(--success); transition: width 0.3s;"></div>
-        </div>
-    </div>
+    <div id="sync-toast">☁️ 數據背景同步中...</div>
 
     <div class="card">
-        <div id="setup-ui" class="setup-ui">
+        <div class="setup-ui">
             <input type="text" id="sid" placeholder="學號">
             <input type="number" id="age" placeholder="年齡">
             <select id="gender"><option value="女">女</option><option value="男">男</option></select>
         </div>
 
         <div class="mood-tag" id="mood-label">心情：喜</div>
-        <div class="timer-info" id="timer-display">繪製：0.0s</div>
+        <div class="timer-info" id="timer-display">實際繪製：0.0s</div>
 
         <div class="controls-group">
+            <span class="label-text">🎨 選擇色彩：</span>
             <div class="control-item">
                 <input type="range" id="colorSlider" min="0" max="359" value="0" oninput="updateBrush()">
-                <div id="cPreview" style="width:30px; height:30px; border-radius:8px; background:#f00; border:2px solid #eee;"></div>
+                <div id="cPreview" style="width:34px; height:34px; border-radius:8px; background:#f00; border:2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
             </div>
+            <span class="label-text">🖌️ 筆觸大小：</span>
             <div class="control-item">
-                <input type="range" id="sizeSlider" min="2" max="50" value="8" oninput="updateBrush()" style="flex:1;">
-                <span id="sVal" style="font-size:12px; font-weight:bold; width:20px;">8</span>
+                <input type="range" id="sizeSlider" min="2" max="60" value="10" oninput="updateBrush()" style="flex:1;">
+                <span id="sVal" style="font-weight:bold; font-size:14px; width:20px;">10</span>
             </div>
         </div>
 
         <div class="canvas-container">
             <div class="toolbar">
                 <button class="tool-btn" style="background:#f1c40f;" onclick="undo()">↩️ 復原</button>
-                <span id="step-cnt" style="font-size:12px; color:#999;">Step 1/4</span>
-                <button class="tool-btn" style="background:#e74c3c; color:white;" onclick="clearCanvas()">🗑️ 清除</button>
+                <span id="step-cnt" style="font-size:12px; color:#95a5a6; font-weight:bold;">1 / 4</span>
+                <button class="tool-btn" style="background:#e74c3c; color:white;" onclick="clearCanvas()">🗑️ 重畫</button>
             </div>
             <canvas id="canvas"></canvas>
         </div>
 
-        <textarea id="mood-desc" class="desc-area" placeholder="請描述您的色彩選擇與感受..."></textarea>
-        <button class="btn-next" id="action-btn" onclick="nextStep()">下一步</button>
+        <textarea id="mood-desc" class="desc-area" placeholder="描述您的色彩與感受..."></textarea>
+        <button class="btn-next" id="action-btn" onclick="handleNext()">保存並進行下一步</button>
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxco7a9N8h1USfXfhmnZD_ktPPCbNNRuN5V-F2mF-iUGu7w0hG0_KIKBZ3JdCLbUOEaXQ/exec";
         const moods = ["喜", "怒", "哀", "樂"];
-        let step = 0, finalData = [], canvasHistory = [], strokeHistory = [];
+        let step = 0, strokeHistory = [], canvasHistory = [];
         let drawing = false, hasDrawn = false, activeTime = 0, lastTs = 0;
-        let curHex = "#FF0000", curSize = 8, currentStroke = null;
+        let curHex = "#FF0000", curSize = 10, currentStroke = null;
+        let uploadQueue = 0; // 用於追蹤背景上傳數量
 
         const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
 
@@ -101,11 +99,9 @@
         }
 
         function initCanvas() {
-            const container = canvas.parentElement;
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientWidth * 0.75;
-            ctx.fillStyle = "white";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.width * 0.75;
+            ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height);
             canvasHistory = [canvas.toDataURL('image/jpeg', 0.3)];
         }
         window.onload = initCanvas;
@@ -126,13 +122,11 @@
         function move(e) {
             if (!drawing) return;
             const {x, y} = getPos(e);
-            const now = Date.now();
-            activeTime += (now - lastTs) / 1000;
-            lastTs = now;
+            const now = Date.now(); activeTime += (now - lastTs) / 1000; lastTs = now;
             currentStroke.points.push({ x, y, t: activeTime.toFixed(2) });
             ctx.lineTo(x, y); ctx.strokeStyle = curHex; ctx.lineWidth = curSize;
             ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
-            document.getElementById('timer-display').innerText = `繪製：${activeTime.toFixed(1)}s`;
+            document.getElementById('timer-display').innerText = `實際繪製：${activeTime.toFixed(1)}s`;
         }
 
         function stop() {
@@ -154,12 +148,8 @@
         function undo() {
             if (canvasHistory.length > 1) {
                 canvasHistory.pop(); strokeHistory.pop();
-                const img = new Image();
-                img.src = canvasHistory[canvasHistory.length - 1];
-                img.onload = () => {
-                    ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height);
-                    ctx.drawImage(img,0,0);
-                };
+                const img = new Image(); img.src = canvasHistory[canvasHistory.length - 1];
+                img.onload = () => { ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0); };
             }
         }
 
@@ -167,63 +157,62 @@
             ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height);
             strokeHistory = []; canvasHistory = [canvas.toDataURL('image/jpeg', 0.3)];
             activeTime = 0; hasDrawn = false;
-            document.getElementById('timer-display').innerText = `繪製：0.0s`;
+            document.getElementById('timer-display').innerText = `實際繪製：0.0s`;
         }
 
-        function nextStep() {
+        // 核心修正：背景上傳邏輯
+        async function uploadData(data) {
+            uploadQueue++;
+            document.getElementById('sync-toast').style.display = "block";
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+            } catch (e) { console.error("Sync Error", e); }
+            uploadQueue--;
+            if(uploadQueue === 0) document.getElementById('sync-toast').style.display = "none";
+        }
+
+        function handleNext() {
             const sid = document.getElementById('sid').value.trim();
             const age = document.getElementById('age').value;
             const desc = document.getElementById('mood-desc').value.trim();
-            if(!sid || !age || !hasDrawn || desc.length < 2) return alert("請填寫完整信息並完成繪圖！");
+            if(!sid || !age || !hasDrawn || desc.length < 2) return alert("請完整填寫信息！");
 
-            // 記錄色彩序列：從 strokeHistory 中提取所有不重複的顏色
             const colors = [...new Set(strokeHistory.map(s => s.color))].join(", ");
-
-            finalData.push({
+            const currentData = {
                 id: sid, age, gender: document.getElementById('gender').value,
-                mood: moods[step],
-                color_seq: colors, // 這裡成功記錄色票順序了
-                active_time: activeTime.toFixed(1),
-                desc: desc,
+                mood: moods[step], color_seq: colors,
+                active_time: activeTime.toFixed(1), desc: desc,
                 stroke_detail: JSON.stringify(strokeHistory),
-                image: canvas.toDataURL('image/jpeg', 0.3) // 降低質量加速傳輸
-            });
+                image: canvas.toDataURL('image/jpeg', 0.3)
+            };
+
+            // 立即發射，不等待結果
+            uploadData(currentData);
 
             if (step < 3) {
                 step++;
                 document.getElementById('mood-label').innerText = `心情：${moods[step]}`;
-                document.getElementById('step-cnt').innerText = `Step ${step+1}/4`;
-                document.getElementById('setup-ui').style.display = "none";
+                document.getElementById('step-cnt').innerText = `${step+1} / 4`;
+                document.getElementById('setup-group')?.setAttribute("style", "display:none"); 
                 document.getElementById('mood-desc').value = "";
-                if(step === 3) document.getElementById('action-btn').innerText = "上傳最終結果";
+                if(step === 3) document.getElementById('action-btn').innerText = "完成並結束實驗";
                 clearCanvas();
                 window.scrollTo(0,0);
             } else {
-                upload();
+                checkFinish();
             }
         }
 
-        async function upload() {
-            document.getElementById('loading-overlay').style.display = "flex";
-            const status = document.getElementById('loading-status');
-            const bar = document.getElementById('progress-bar');
-
-            for (let i = 0; i < finalData.length; i++) {
-                status.innerText = `同步 ${finalData[i].mood} 數據 (${i+1}/4)...`;
-                bar.style.width = `${((i+1)/4)*100}%`;
-                
-                try {
-                    await fetch(SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        body: JSON.stringify(finalData[i])
-                    });
-                    await new Promise(r => setTimeout(r, 600)); // 縮短等待時間
-                } catch (e) { console.error(e); }
+        function checkFinish() {
+            if(uploadQueue > 0) {
+                document.getElementById('action-btn').innerText = "正在確保數據傳輸...";
+                setTimeout(checkFinish, 500);
+            } else {
+                alert("✨ 實驗完成！數據已成功同步。");
+                location.reload();
             }
-            alert("實驗成功完成！");
-            location.reload();
         }
+        updateBrush();
     </script>
 </body>
 </html>
