@@ -3,41 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>情緒視覺實驗室 - 極速版</title>
+    <title>情緒視覺實驗室 - 學術增強版</title>
     <style>
         :root { --primary: #1e3799; --bg: #f5f6fa; --danger: #eb4d4b; --success: #20bf6b; }
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; }
         .card { background: white; width: 100%; max-width: 550px; margin: 15px; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         
-        /* 修正：電腦與手機通用的學號年齡佈局 */
         .setup-ui { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: nowrap; }
-        #sid { flex: 0 1 250px; min-width: 120px; } /* 學號寬度限制 */
-        #age { flex: 0 1 80px; min-width: 60px; }   /* 年齡寬度固定 */
+        #sid { flex: 0 1 250px; min-width: 120px; } 
+        #age { flex: 0 1 80px; min-width: 60px; }   
         #gender { flex: 0 1 80px; min-width: 70px; } 
 
         input, select { height: 48px; border: 2px solid #eee; border-radius: 12px; padding: 0 10px; font-size: 15px !important; outline: none; }
         input:focus { border-color: var(--primary); }
 
-        .mood-tag { font-size: 34px; font-weight: bold; color: var(--primary); text-align: center; margin-bottom: 5px; }
+        .mood-tag { font-size: 30px; font-weight: bold; color: var(--primary); text-align: center; margin-bottom: 5px; }
         .timer-info { text-align: center; color: #95a5a6; font-size: 13px; margin-bottom: 15px; }
 
         .controls-group { background: #f9f9f9; padding: 15px; border-radius: 18px; margin-bottom: 15px; }
         .label-text { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 5px; display: block; }
         .control-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
         
-        #colorSlider { flex: 1; height: 18px; border-radius: 10px; -webkit-appearance: none; background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
-        #colorSlider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: white; border: 3px solid var(--primary); border-radius: 50%; }
+        #colorSlider, #arousalSlider { flex: 1; height: 18px; border-radius: 10px; -webkit-appearance: none; background: #eee; }
+        #colorSlider { background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+        #arousalSlider { background: linear-gradient(to right, #78e08f, #f6e58d, #ff7979); }
+        
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: white; border: 3px solid var(--primary); border-radius: 50%; }
 
         .canvas-container { border: 2px solid #eee; border-radius: 18px; overflow: hidden; background: white; }
         canvas { display: block; width: 100%; aspect-ratio: 4 / 3; touch-action: none; background: white; }
         .toolbar { display: flex; padding: 10px; background: #fafafa; border-bottom: 1px solid #eee; justify-content: space-between; align-items: center; }
         .tool-btn { border: none; padding: 8px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; }
 
-        .desc-area { width: 100%; margin-top: 15px; height: 90px; border: 2px solid #eee; border-radius: 15px; padding: 12px; font-size: 16px; resize: none; }
+        .desc-area { width: 100%; margin-top: 15px; height: 80px; border: 2px solid #eee; border-radius: 15px; padding: 12px; font-size: 16px; resize: none; }
         .btn-next { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 18px; font-weight: bold; font-size: 19px; margin-top: 15px; cursor: pointer; }
 
-        /* 背景上傳提示 */
         #sync-toast { position: fixed; top: 20px; right: 20px; background: #2f3542; color: white; padding: 10px 20px; border-radius: 10px; display: none; font-size: 12px; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
     </style>
 </head>
@@ -45,13 +46,13 @@
     <div id="sync-toast">☁️ 數據背景同步中...</div>
 
     <div class="card">
-        <div class="setup-ui">
+        <div class="setup-ui" id="setup-group">
             <input type="text" id="sid" placeholder="學號">
             <input type="number" id="age" placeholder="年齡">
             <select id="gender"><option value="女">女</option><option value="男">男</option></select>
         </div>
 
-        <div class="mood-tag" id="mood-label">心情：喜</div>
+        <div class="mood-tag" id="mood-label">1. 喜悅 (Joy)</div>
         <div class="timer-info" id="timer-display">實際繪製：0.0s</div>
 
         <div class="controls-group">
@@ -65,28 +66,41 @@
                 <input type="range" id="sizeSlider" min="2" max="60" value="10" oninput="updateBrush()" style="flex:1;">
                 <span id="sVal" style="font-weight:bold; font-size:14px; width:20px;">10</span>
             </div>
+            <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">
+            <span class="label-text">⚡ 喚起度 (Arousal) - 此情緒的強烈程度 [1-5]：</span>
+            <div class="control-item">
+                <input type="range" id="arousalSlider" min="1" max="5" value="3" step="1" oninput="document.getElementById('aVal').innerText = this.value">
+                <span id="aVal" style="font-weight:bold; font-size:16px; width:20px; color:var(--primary)">3</span>
+            </div>
         </div>
 
         <div class="canvas-container">
             <div class="toolbar">
                 <button class="tool-btn" style="background:#f1c40f;" onclick="undo()">↩️ 復原</button>
-                <span id="step-cnt" style="font-size:12px; color:#95a5a6; font-weight:bold;">1 / 4</span>
+                <span id="step-cnt" style="font-size:12px; color:#95a5a6; font-weight:bold;">1 / 12</span>
                 <button class="tool-btn" style="background:#e74c3c; color:white;" onclick="clearCanvas()">🗑️ 重畫</button>
             </div>
             <canvas id="canvas"></canvas>
         </div>
 
-        <textarea id="mood-desc" class="desc-area" placeholder="描述您的色彩與感受..."></textarea>
+        <textarea id="mood-desc" class="desc-area" placeholder="描述您選擇這些顏色與筆觸的原因..."></textarea>
         <button class="btn-next" id="action-btn" onclick="handleNext()">保存並進行下一步</button>
     </div>
 
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxco7a9N8h1USfXfhmnZD_ktPPCbNNRuN5V-F2mF-iUGu7w0hG0_KIKBZ3JdCLbUOEaXQ/exec";
-        const moods = ["喜", "怒", "哀", "樂"];
+        
+        // 更新為 12 個學術詞彙
+        const moods = [
+            "喜悅 (Joy)", "憤怒 (Anger)", "悲傷 (Sadness)", "恐懼 (Fear)", 
+            "興奮 (Excited)", "放鬆 (Relaxed)", "焦慮 (Anxious)", "憂鬱 (Depressed)",
+            "敬畏 (Awe)", "懷舊 (Nostalgia)", "迷惘 (Confusion)", "滿足 (Contentment)"
+        ];
+
         let step = 0, strokeHistory = [], canvasHistory = [];
         let drawing = false, hasDrawn = false, activeTime = 0, lastTs = 0;
         let curHex = "#FF0000", curSize = 10, currentStroke = null;
-        let uploadQueue = 0; // 用於追蹤背景上傳數量
+        let uploadQueue = 0;
 
         const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
 
@@ -160,7 +174,6 @@
             document.getElementById('timer-display').innerText = `實際繪製：0.0s`;
         }
 
-        // 核心修正：背景上傳邏輯
         async function uploadData(data) {
             uploadQueue++;
             document.getElementById('sync-toast').style.display = "block";
@@ -175,27 +188,29 @@
             const sid = document.getElementById('sid').value.trim();
             const age = document.getElementById('age').value;
             const desc = document.getElementById('mood-desc').value.trim();
-            if(!sid || !age || !hasDrawn || desc.length < 2) return alert("請完整填寫信息！");
+            if(!sid || !age || !hasDrawn || desc.length < 2) return alert("請完整填寫信息與繪圖！");
 
             const colors = [...new Set(strokeHistory.map(s => s.color))].join(", ");
             const currentData = {
                 id: sid, age, gender: document.getElementById('gender').value,
-                mood: moods[step], color_seq: colors,
+                mood: moods[step], 
+                arousal: document.getElementById('arousalSlider').value, // 新增喚起度數據
+                color_seq: colors,
                 active_time: activeTime.toFixed(1), desc: desc,
                 stroke_detail: JSON.stringify(strokeHistory),
                 image: canvas.toDataURL('image/jpeg', 0.3)
             };
 
-            // 立即發射，不等待結果
             uploadData(currentData);
 
-            if (step < 3) {
+            if (step < moods.length - 1) {
                 step++;
-                document.getElementById('mood-label').innerText = `心情：${moods[step]}`;
-                document.getElementById('step-cnt').innerText = `${step+1} / 4`;
-                document.getElementById('setup-group')?.setAttribute("style", "display:none"); 
+                document.getElementById('mood-label').innerText = `${step+1}. ${moods[step]}`;
+                document.getElementById('step-cnt').innerText = `${step+1} / ${moods.length}`;
+                document.getElementById('setup-group').style.display = "none"; 
                 document.getElementById('mood-desc').value = "";
-                if(step === 3) document.getElementById('action-btn').innerText = "完成並結束實驗";
+                document.getElementById('arousalSlider').value = 3; // 重置喚起度滑槓
+                document.getElementById('aVal').innerText = 3;
                 clearCanvas();
                 window.scrollTo(0,0);
             } else {
@@ -205,10 +220,10 @@
 
         function checkFinish() {
             if(uploadQueue > 0) {
-                document.getElementById('action-btn').innerText = "正在確保數據傳輸...";
+                document.getElementById('action-btn').innerText = "數據同步中，請稍候...";
                 setTimeout(checkFinish, 500);
             } else {
-                alert("✨ 實驗完成！數據已成功同步。");
+                alert("✨ 實驗完成！所有數據已成功同步。");
                 location.reload();
             }
         }
