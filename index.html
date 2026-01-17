@@ -43,21 +43,19 @@
             <input type="text" id="sid" placeholder="學號" style="flex:2;">
             <input type="number" id="age" placeholder="年齡" style="flex:1;">
             <select id="gender"><option value="女">女</option><option value="男">男</option></select>
-            <select id="exp-group" style="display:none;">
-                <option value="Contral_TEST" selected>控制組</option>
-            </select>
+            <select id="exp-group" style="display:none;"><option value="Contral_TEST" selected>控制組</option></select>
         </div>
 
         <div class="mood-tag" id="mood-label">心情：喜</div>
         <div class="timer-info" id="timer-display">實際繪製：0.0s</div>
 
         <div class="controls-group">
-            <label class="control-label">1. 色彩選擇 (HEX 標準色票)</label>
+            <label class="control-label">1. 色彩選擇 (HEX 預覽)</label>
             <div class="control-item">
                 <input type="range" id="colorSlider" min="0" max="359" value="0" oninput="updateBrush()">
                 <span id="hex-display" style="font-family:monospace; font-weight:bold; width:70px;">#FF0000</span>
             </div>
-            <label class="control-label">2. 筆觸大小</label>
+            <label class="control-label">2. 筆觸粗細</label>
             <div class="control-item">
                 <input type="range" id="sizeSlider" min="2" max="40" value="8" oninput="updateBrush()" style="flex:1;">
                 <div style="width:45px; display:flex; justify-content:center;"><div id="brushInd"></div></div>
@@ -67,8 +65,8 @@
         <div class="canvas-container">
             <div class="toolbar">
                 <button class="tool-btn btn-undo" onclick="undo()">↩️ 復原</button>
-                <span style="font-size:12px; color:#999;">畫布區域</span>
-                <button class="tool-btn btn-clear" onclick="clearCanvas()">🗑️ 全清</button>
+                <span style="font-size:12px; color:#999;">在此繪畫</span>
+                <button class="tool-btn btn-clear" onclick="clearCanvas()">🗑️ 清空</button>
             </div>
             <canvas id="canvas"></canvas>
         </div>
@@ -78,14 +76,14 @@
     </div>
 
     <script>
-        // 請確保這裡的 SCRIPT_URL 是正確的
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbypv3jKvNX2-JoBMroLyimu0fl4FDUvcCuepVhhzGEE6tOACgUwyJG4w3fv1PybgOmfzg/exec"; 
+        // ！！！請在此處替換你的 GAS 網址！！！
+        const SCRIPT_URL = "YOUR_GAS_URL_HERE"; 
         
         const moods = ["喜", "怒", "哀", "樂"];
         let step = 0, finalData = [], curHex = "#FF0000", curSize = 8, history = [], hasDrawn = false, drawing = false;
         let activeTime = 0, lastTs = 0, colorSeq = [];
         
-        // 軌跡紀錄變量
+        // 軌跡紀錄核心數據結構
         let strokeHistory = []; 
         let currentStroke = null;
 
@@ -125,37 +123,33 @@
             return { x: c.clientX - r.left, y: c.clientY - r.top }; 
         }
 
+        // 開始紀錄筆觸
         function start(e) { 
             drawing = true; hasDrawn = true; lastTs = Date.now(); 
             const {x, y} = getPos(e);
-            
-            // 初始化軌跡紀錄
             currentStroke = {
                 size: curSize,
                 color: curHex,
                 startTime: Date.now(),
                 points: [{x: Math.round(x), y: Math.round(y), t: 0}]
             };
-
             if (colorSeq[colorSeq.length-1] !== curHex) colorSeq.push(curHex);
             ctx.beginPath(); ctx.moveTo(x, y); 
         }
 
+        // 紀錄移動軌跡
         function move(e) { 
             if(!drawing) return; 
             const now = Date.now(); 
             activeTime += (now - lastTs) / 1000; lastTs = now;
             updateTimerUI();
-
             const {x, y} = getPos(e);
-            // 紀錄每一點座標與相對時間
-            currentStroke.points.push({
-                x: Math.round(x), 
-                y: Math.round(y), 
-                t: now - currentStroke.startTime
-            });
-
+            currentStroke.points.push({ x: Math.round(x), y: Math.round(y), t: now - currentStroke.startTime });
             ctx.lineTo(x, y); ctx.strokeStyle = curHex; ctx.lineWidth = curSize; ctx.lineCap = 'round'; ctx.stroke(); 
+        }
+
+        function endDrawing() {
+            if(drawing) { strokeHistory.push(currentStroke); save(); drawing = false; }
         }
 
         function updateTimerUI() { document.getElementById('timer-display').innerText = `實際繪製：${activeTime.toFixed(1)}s`; }
@@ -164,20 +158,12 @@
         canvas.addEventListener('touchstart', (e)=>{start(e); e.preventDefault();}, {passive:false});
         canvas.addEventListener('mousemove', move);
         canvas.addEventListener('touchmove', (e)=>{move(e); e.preventDefault();}, {passive:false});
-        
-        function endDrawing() {
-            if(drawing) {
-                strokeHistory.push(currentStroke);
-                save(); 
-                drawing = false;
-            }
-        }
         window.addEventListener('mouseup', endDrawing);
         window.addEventListener('touchend', endDrawing);
 
         function checkAndNext() {
             const sid = document.getElementById('sid').value, desc = document.getElementById('mood-desc').value.trim();
-            if(!sid || !hasDrawn || desc.length < 2) return alert("請完整填寫學號、繪圖並輸入想法描述！");
+            if(!sid || !hasDrawn || desc.length < 2) return alert("請完整填寫學號、繪圖並輸入描述！");
 
             finalData.push({
                 id: sid, age: document.getElementById('age').value, gender: document.getElementById('gender').value,
@@ -186,26 +172,11 @@
                 color_seq: colorSeq.join(", "),
                 active_time: activeTime.toFixed(1),
                 desc: desc, 
-                stroke_detail: JSON.stringify(strokeHistory), // 把軌跡紀錄轉換為 JSON 字串
+                stroke_detail: JSON.stringify(strokeHistory), // 軌跡序列化
                 image: canvas.toDataURL('image/jpeg', 0.4)
             });
 
-            strokeHistory = []; // 重置下一題軌跡
-
-            const isAI = document.getElementById('exp-group').value === "AI_TEST";
-            if (isAI) {
-                const feedback = { "喜":"這繽紛的色彩好有生命力！☀️", "怒":"筆觸好有爆發力！🔥", "哀":"色調中蘊含著深刻情感。🕯️", "樂":"色彩搭配讓人喜悅！🌈" };
-                document.getElementById('fb-text').innerText = feedback[moods[step]];
-                document.getElementById('fb-overlay').style.display = "block";
-                document.getElementById('fb-box').style.display = "block";
-            } else {
-                goNext();
-            }
-        }
-
-        function closeFB() {
-            document.getElementById('fb-overlay').style.display = "none";
-            document.getElementById('fb-box').style.display = "none";
+            strokeHistory = []; 
             goNext();
         }
 
@@ -217,22 +188,19 @@
                 document.getElementById('mood-desc').value = "";
                 document.getElementById('action-btn').innerText = `保存並繼續 (${step+1}/4) ✨`;
                 clearCanvas();
-            } else {
-                submit();
-            }
+            } else { submit(); }
         }
 
         async function submit() {
             const btn = document.getElementById('action-btn');
-            btn.disabled = true; btn.innerText = "數據同步中... 🚀";
+            btn.disabled = true; btn.innerText = "正在上傳所有紀錄... 🚀";
             try {
                 for(let data of finalData) {
-                    // 請確認 GAS 的 doPost 有接收 stroke_detail 欄位
                     await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
                 }
-                alert("🎉 所有實驗數據與軌跡已同步！");
+                alert("🎉 實驗完成！軌跡數據已安全儲存。");
                 location.reload();
-            } catch(e) { alert("傳送失敗！"); btn.disabled = false; }
+            } catch(e) { alert("上傳失敗！"); btn.disabled = false; }
         }
         updateBrush();
     </script>
