@@ -110,8 +110,8 @@
     </div>
 
     <script>
-        // 請務必將下方的 URL 替換為你在 Google Apps Script 重新部署後得到的網址
-        const SCRIPT_URL = "在此處貼上你的網址";
+        // 重要：請將下方的 URL 替換為你在 Google Apps Script 部署得到的網址
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxaJKeN83J7amUW3ZnYSvgBwiPJF8V371vBLq2aqjY1hrc7NYJwSG3feaC6POfK42BPwQ/exec";
         
         const moodConfigs = [
             { name: "喜悅 (Joy)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
@@ -227,14 +227,14 @@
 
             const colors = [...new Set(strokeHistory.map(s => s.color))].join(", ");
             
-            // 數據封裝：包含控制組標記與喚起度
+            // 此處將數據封裝，確保 group 與 arousal 都有值
             const currentData = {
                 id: sid, 
                 age: age, 
                 gender: document.getElementById('gender').value,
-                group: "控制組", // 標記為控制組 (D欄)
+                group: "控制組",               // 固定組別為控制組 (對應 D 欄)
                 mood: moodConfigs[step].name, 
-                arousal: arousalNode.value, // 喚起度數值 (L欄)
+                arousal: arousalNode.value,     // 喚起度數值 (對應 L 欄)
                 color_seq: colors,
                 active_time: activeTime.toFixed(1), 
                 desc: desc,
