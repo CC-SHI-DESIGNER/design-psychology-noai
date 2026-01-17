@@ -42,7 +42,6 @@
         }
         .scale-hints { display: flex; justify-content: space-between; font-size: 11px; color: #95a5a6; margin-top: 4px; }
 
-        /* 新增：引導提示樣式 */
         .visual-hint { 
             background: #fff9db; color: #f39c12; padding: 10px; 
             text-align: center; font-size: 13px; font-weight: bold;
@@ -102,7 +101,7 @@
                 <span id="step-cnt" style="font-size:12px; color:#95a5a6; font-weight:bold;">1 / 12</span>
                 <button class="tool-btn" style="background:#e74c3c; color:white;" onclick="clearCanvas()">🗑️ 重畫</button>
             </div>
-            <div id="visual-hint" class="visual-hint">💡 提示：試著用流暢、向上的曲線或明亮色塊來表達</div>
+            <div id="visual-hint" class="visual-hint">💡 提示：感受詞匯，用線條、色彩或圖像表達</div>
             <canvas id="canvas"></canvas>
         </div>
 
@@ -113,20 +112,19 @@
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxco7a9N8h1USfXfhmnZD_ktPPCbNNRuN5V-F2mF-iUGu7w0hG0_KIKBZ3JdCLbUOEaXQ/exec";
         
-        // 擴展情緒對象，加入引導語
         const moodConfigs = [
-            { name: "喜悅 (Joy)", hint: "💡 提示：想像流暢、向上躍動的曲線或擴散的色塊" },
-            { name: "憤怒 (Anger)", hint: "💡 提示：想像尖銳、粗重、放射狀或破碎的有力線條" },
-            { name: "悲傷 (Sadness)", hint: "💡 提示：想像沉重、緩慢下垂的長線或聚攏的暗影" },
-            { name: "恐懼 (Fear)", hint: "💡 提示：想像細碎、急促抖動、斷裂或收縮的幾何感" },
-            { name: "興奮 (Excited)", hint: "💡 提示：想像高頻率、跳躍、豐富交織的動態軌跡" },
-            { name: "放鬆 (Relaxed)", hint: "💡 提示：想像水平延伸、溫和緩慢、寬闊疏朗的波浪" },
-            { name: "焦慮 (Anxious)", hint: "💡 提示：想像雜亂、纏繞、反覆堆疊且不穩定的細線" },
-            { name: "憂鬱 (Depressed)", hint: "💡 提示：想像模糊、單調、由上至下滲透的沉悶色調" },
-            { name: "敬畏 (Awe)", hint: "💡 提示：想像宏大、對稱、向無限延伸的發散式結構" },
-            { name: "懷舊 (Nostalgia)", hint: "💡 提示：想像柔焦、環狀捲曲、具有層次感的重疊形狀" },
-            { name: "迷惘 (Confusion)", hint: "💡 提示：想像旋轉、無方向性、互不銜接的迷宮式線條" },
-            { name: "滿足 (Contentment)", hint: "💡 提示：想像圓潤、穩定、飽滿且均衡分佈的閉合圓弧" }
+            { name: "喜悅 (Joy)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "憤怒 (Anger)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "悲傷 (Sadness)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "恐懼 (Fear)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "興奮 (Excited)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "放鬆 (Relaxed)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "焦慮 (Anxious)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "憂鬱 (Depressed)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "敬畏 (Awe)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "懷舊 (Nostalgia)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "迷惘 (Confusion)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
+            { name: "滿足 (Contentment)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" }
         ];
 
         let step = 0, strokeHistory = [], canvasHistory = [];
@@ -227,12 +225,17 @@
             if(desc.length < 2) return alert("請描述您的感受。");
 
             const colors = [...new Set(strokeHistory.map(s => s.color))].join(", ");
+            
+            // 核心修改：數據封裝包含 arousal 喚起度
             const currentData = {
-                id: sid, age, gender: document.getElementById('gender').value,
+                id: sid, 
+                age: age, 
+                gender: document.getElementById('gender').value,
                 mood: moodConfigs[step].name, 
-                arousal: arousalNode.value,
+                arousal: arousalNode.value, // 此處將喚起度數值傳入
                 color_seq: colors,
-                active_time: activeTime.toFixed(1), desc: desc,
+                active_time: activeTime.toFixed(1), 
+                desc: desc,
                 stroke_detail: JSON.stringify(strokeHistory),
                 image: canvas.toDataURL('image/jpeg', 0.3)
             };
@@ -241,7 +244,6 @@
 
             if (step < moodConfigs.length - 1) {
                 step++;
-                // 更新標題與引導語
                 document.getElementById('mood-label').innerText = `${step+1}. ${moodConfigs[step].name}`;
                 document.getElementById('visual-hint').innerText = moodConfigs[step].hint;
                 document.getElementById('step-cnt').innerText = `${step+1} / ${moodConfigs.length}`;
