@@ -20,12 +20,23 @@
         .mood-tag { font-size: 28px; font-weight: bold; color: var(--primary); text-align: center; margin-bottom: 5px; }
         .timer-info { text-align: center; color: #95a5a6; font-size: 13px; margin-bottom: 15px; }
 
-        .controls-group { background: #f9f9f9; padding: 15px; border-radius: 18px; margin-bottom: 15px; }
+        .controls-group { background: #f9f9f9; padding: 15px; border-radius: 18px; margin-bottom: 15px; position: relative; }
         .label-text { font-size: 14px; font-weight: bold; color: #555; margin-bottom: 8px; display: block; }
         .control-item { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
         
         #colorSlider { flex: 1; height: 18px; border-radius: 10px; -webkit-appearance: none; background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
         #colorSlider::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: white; border: 3px solid var(--primary); border-radius: 50%; }
+
+        /* 色彩預覽框與彈出層 */
+        #cPreview { width: 44px; height: 44px; border-radius: 10px; border: 3px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s; }
+        #cPreview:active { transform: scale(0.9); }
+        
+        .lightness-picker { 
+            position: absolute; right: 15px; top: 60px; background: white; 
+            padding: 10px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); 
+            display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; z-index: 100; 
+        }
+        .light-opt { width: 35px; height: 35px; border-radius: 8px; cursor: pointer; border: 1px solid #eee; }
 
         .likert-scale { display: flex; justify-content: space-between; gap: 8px; margin: 10px 0; }
         .likert-item { flex: 1; }
@@ -73,11 +84,21 @@
         <div class="timer-info" id="timer-display">繪製時長：0.0s</div>
 
         <div class="controls-group">
-            <span class="label-text">🎨 畫筆色彩：</span>
+            <span class="label-text">🎨 畫筆色彩 (點擊色塊調明暗)：</span>
             <div class="control-item">
                 <input type="range" id="colorSlider" min="0" max="359" value="0" oninput="updateBrush()">
-                <div id="cPreview" style="width:34px; height:34px; border-radius:8px; background:#f00; border:2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></div>
+                <div id="cPreview" onclick="togglePicker()"></div>
+                
+                <div id="lightPicker" class="lightness-picker">
+                    <div class="light-opt" onclick="setLight(20)" style="background:#333" title="極深"></div>
+                    <div class="light-opt" onclick="setLight(35)" style="background:#666" title="深"></div>
+                    <div class="light-opt" onclick="setLight(50)" style="background:#999" title="適中"></div>
+                    <div class="light-opt" onclick="setLight(65)" style="background:#bbb" title="淺"></div>
+                    <div class="light-opt" onclick="setLight(80)" style="background:#ddd" title="極淺"></div>
+                    <div class="light-opt" onclick="setLight(95)" style="background:#fff" title="近白"></div>
+                </div>
             </div>
+            
             <span class="label-text">🖌️ 筆觸大小：</span>
             <div class="control-item">
                 <input type="range" id="sizeSlider" min="2" max="60" value="10" oninput="updateBrush()" style="flex:1;">
@@ -110,7 +131,6 @@
     </div>
 
     <script>
-        // 重要：請將下方的 URL 替換為你在 Google Apps Script 部署得到的網址
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwR80XX9X2Sf9foystUm68VH50LyEhnpwIia7_baxKJ3qEM5qyMN00aCZG5MKK_hB8VSQ/exec";
         
         const moodConfigs = [
@@ -130,15 +150,37 @@
 
         let step = 0, strokeHistory = [], canvasHistory = [];
         let drawing = false, hasDrawn = false, activeTime = 0, lastTs = 0;
-        let curHex = "#FF0000", curSize = 10, currentStroke = null;
+        let curHue = 0, curLight = 50, curSize = 10, curHex = "";
         let uploadQueue = 0;
 
         const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
 
+        // 切換明暗選擇器
+        function togglePicker() {
+            const picker = document.getElementById('lightPicker');
+            picker.style.display = picker.style.display === 'grid' ? 'none' : 'grid';
+            refreshLightOptions();
+        }
+
+        // 刷新選擇器內的顏色（根據當前色相）
+        function refreshLightOptions() {
+            const opts = document.querySelectorAll('.light-opt');
+            const lights = [20, 35, 50, 65, 80, 95];
+            opts.forEach((opt, idx) => {
+                opt.style.background = `hsl(${curHue}, 85%, ${lights[idx]}%)`;
+            });
+        }
+
+        function setLight(l) {
+            curLight = l;
+            updateBrush();
+            document.getElementById('lightPicker').style.display = 'none';
+        }
+
         function updateBrush() {
-            const h = document.getElementById('colorSlider').value;
+            curHue = document.getElementById('colorSlider').value;
             curSize = document.getElementById('sizeSlider').value;
-            curHex = `hsl(${h}, 85%, 50%)`;
+            curHex = `hsl(${curHue}, 85%, ${curLight}%)`;
             document.getElementById('cPreview').style.background = curHex;
             document.getElementById('sVal').innerText = curSize;
         }
@@ -148,6 +190,7 @@
             canvas.height = canvas.width * 0.75;
             ctx.fillStyle = "white"; ctx.fillRect(0,0,canvas.width,canvas.height);
             canvasHistory = [canvas.toDataURL('image/jpeg', 0.3)];
+            updateBrush();
         }
         window.onload = initCanvas;
 
@@ -158,6 +201,9 @@
         }
 
         function start(e) {
+            if (document.getElementById('lightPicker').style.display === 'grid') {
+                document.getElementById('lightPicker').style.display = 'none';
+            }
             drawing = true; hasDrawn = true; lastTs = Date.now();
             const {x, y} = getPos(e);
             currentStroke = { color: curHex, size: curSize, points: [{x, y, t: 0}] };
@@ -169,8 +215,12 @@
             const {x, y} = getPos(e);
             const now = Date.now(); activeTime += (now - lastTs) / 1000; lastTs = now;
             currentStroke.points.push({ x, y, t: activeTime.toFixed(2) });
-            ctx.lineTo(x, y); ctx.strokeStyle = curHex; ctx.lineWidth = curSize;
-            ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.stroke();
+            ctx.lineTo(x, y); 
+            ctx.strokeStyle = curHex; 
+            ctx.lineWidth = curSize;
+            ctx.lineCap = "round"; 
+            ctx.lineJoin = "round"; 
+            ctx.stroke();
             document.getElementById('timer-display').innerText = `繪製時長：${activeTime.toFixed(1)}s`;
         }
 
@@ -227,14 +277,13 @@
 
             const colors = [...new Set(strokeHistory.map(s => s.color))].join(", ");
             
-            // 此處將數據封裝，確保 group 與 arousal 都有值
             const currentData = {
                 id: sid, 
                 age: age, 
                 gender: document.getElementById('gender').value,
-                group: "控制組",               // 固定組別為控制組 (對應 D 欄)
+                group: "控制組",
                 mood: moodConfigs[step].name, 
-                arousal: arousalNode.value,     // 喚起度數值 (對應 L 欄)
+                arousal: arousalNode.value,
                 color_seq: colors,
                 active_time: activeTime.toFixed(1), 
                 desc: desc,
@@ -253,6 +302,8 @@
                 document.getElementById('setup-group').style.display = "none"; 
                 document.getElementById('mood-desc').value = "";
                 document.querySelectorAll('input[name="arousal"]').forEach(r => r.checked = false);
+                
+                curLight = 50; // 重置明暗
                 clearCanvas();
                 window.scrollTo(0,0);
             } else {
@@ -269,7 +320,6 @@
                 location.reload();
             }
         }
-        updateBrush();
     </script>
 </body>
 </html>
