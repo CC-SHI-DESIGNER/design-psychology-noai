@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>情緒視覺實驗室 - 視覺引導版</title>
+    <title>情緒視覺實驗室 - 控制組</title>
     <style>
         :root { --primary: #1e3799; --bg: #f5f6fa; --danger: #eb4d4b; --success: #20bf6b; --gray: #dcdde1; }
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -110,7 +110,8 @@
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhddDm1Rn0aeAUxKibv4cYvfKCMwi821Ib4Vw-Hvy_ZgKsqF5LXYo-UjnCIq4dDP3ksA/exec";
+        // 請務必將下方的 URL 替換為你在 Google Apps Script 重新部署後得到的網址
+        const SCRIPT_URL = "在此處貼上你的網址";
         
         const moodConfigs = [
             { name: "喜悅 (Joy)", hint: "💡 提示：感受詞匯，用線條、色彩或圖像表達" },
@@ -226,12 +227,14 @@
 
             const colors = [...new Set(strokeHistory.map(s => s.color))].join(", ");
             
+            // 數據封裝：包含控制組標記與喚起度
             const currentData = {
                 id: sid, 
                 age: age, 
                 gender: document.getElementById('gender').value,
+                group: "控制組", // 標記為控制組 (D欄)
                 mood: moodConfigs[step].name, 
-                arousal: arousalNode.value, // 記錄喚起度
+                arousal: arousalNode.value, // 喚起度數值 (L欄)
                 color_seq: colors,
                 active_time: activeTime.toFixed(1), 
                 desc: desc,
